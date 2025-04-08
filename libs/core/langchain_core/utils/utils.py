@@ -3,11 +3,9 @@
 import contextlib
 import datetime
 import functools
-import importlib
 import os
 import warnings
 from collections.abc import Iterator, Sequence
-from importlib.metadata import version
 from typing import Any, Callable, Optional, Union, overload
 
 from packaging.version import parse
@@ -116,8 +114,10 @@ def guard_import(
     Raises:
         ImportError: If the module is not installed.
     """
+    from importlib import import_module
+
     try:
-        module = importlib.import_module(module_name, package)
+        module = import_module(module_name, package)
     except (ImportError, ModuleNotFoundError) as e:
         pip_name = pip_name or module_name.split(".")[0].replace("_", "-")
         msg = (
@@ -151,6 +151,8 @@ def check_package_version(
     Raises:
         ValueError: If the package version does not meet the requirements.
     """
+    from importlib.metadata import version
+
     imported_version = parse(version(package))
     if lt_version is not None and imported_version >= parse(lt_version):
         msg = (
