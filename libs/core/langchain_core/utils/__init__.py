@@ -3,32 +3,37 @@
 These functions do not depend on any other LangChain module.
 """
 
-from langchain_core.utils import image
-from langchain_core.utils.aiter import abatch_iterate
-from langchain_core.utils.env import get_from_dict_or_env, get_from_env
-from langchain_core.utils.formatting import StrictFormatter, formatter
-from langchain_core.utils.input import (
-    get_bolded_text,
-    get_color_mapping,
-    get_colored_text,
-    print_text,
-)
-from langchain_core.utils.iter import batch_iterate
-from langchain_core.utils.loading import try_load_from_hub
-from langchain_core.utils.pydantic import pre_init
-from langchain_core.utils.strings import comma_list, stringify_dict, stringify_value
-from langchain_core.utils.utils import (
-    build_extra_kwargs,
-    check_package_version,
-    convert_to_secret_str,
-    from_env,
-    get_pydantic_field_names,
-    guard_import,
-    mock_now,
-    raise_for_status_with_text,
-    secret_from_env,
-    xor_args,
-)
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # for type checking and IDE support
+    from langchain_core.utils import image
+    from langchain_core.utils.aiter import abatch_iterate
+    from langchain_core.utils.env import get_from_dict_or_env, get_from_env
+    from langchain_core.utils.formatting import StrictFormatter, formatter
+    from langchain_core.utils.input import (
+        get_bolded_text,
+        get_color_mapping,
+        get_colored_text,
+        print_text,
+    )
+    from langchain_core.utils.iter import batch_iterate
+    from langchain_core.utils.loading import try_load_from_hub
+    from langchain_core.utils.pydantic import pre_init
+    from langchain_core.utils.requests import raise_for_status_with_text
+    from langchain_core.utils.strings import comma_list, stringify_dict, stringify_value
+    from langchain_core.utils.utils import (
+        build_extra_kwargs,
+        check_package_version,
+        convert_to_secret_str,
+        from_env,
+        get_pydantic_field_names,
+        guard_import,
+        mock_now,
+        secret_from_env,
+        xor_args,
+    )
 
 __all__ = [
     "build_extra_kwargs",
@@ -58,3 +63,61 @@ __all__ = [
     "from_env",
     "secret_from_env",
 ]
+
+# A mapping of {<member name>: <module name>} defining dynamic imports
+_dynamic_imports: dict[str, str] = {
+    "image": "__module__",
+    "abatch_iterate": "aiter",
+    "get_from_dict_or_env": "env",
+    "get_from_env": "env",
+    "StrictFormatter": "formatting",
+    "formatter": "formatting",
+    "get_bolded_text": "input",
+    "get_color_mapping": "input",
+    "get_colored_text": "input",
+    "print_text": "input",
+    "batch_iterate": "iter",
+    "try_load_from_hub": "loading",
+    "pre_init": "pydantic",
+    "raise_for_status_with_text": "requests",
+    "comma_list": "strings",
+    "stringify_dict": "strings",
+    "stringify_value": "strings",
+    "build_extra_kwargs": "utils",
+    "check_package_version": "utils",
+    "convert_to_secret_str": "utils",
+    "from_env": "utils",
+    "get_pydantic_field_names": "utils",
+    "guard_import": "utils",
+    "mock_now": "utils",
+    "secret_from_env": "utils",
+    "xor_args": "utils",
+}
+
+
+# Implement __getattr__ to handle dynamic imports
+def __getattr__(attr_name: str) -> object:
+    # Fetch the dynamic import details from the mapping
+    module_name = _dynamic_imports.get(attr_name)
+    if module_name is None:
+        raise ImportError(
+            f"cannot import name '{attr_name}' from 'langchain_core.utils'"
+        )
+
+    if module_name == "__module__":
+        result = import_module(f".utils.{attr_name}", package="langchain_core")
+        globals()[attr_name] = result
+        return result
+    module = import_module(f".utils.{module_name}", package="langchain_core")
+    result = getattr(module, attr_name)
+    # TODO: might want to include eager import from module
+    # g = globals()
+    # for k, v_module_name in _dynamic_imports.items():
+    #     if v_module_name == module_name:
+    #         g[k] = getattr(module, k)
+    globals()[attr_name] = result
+    return result
+
+
+def __dir__() -> list[str]:
+    return list(__all__)
