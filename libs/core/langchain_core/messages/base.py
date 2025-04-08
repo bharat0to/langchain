@@ -58,6 +58,7 @@ class BaseMessage(Serializable):
 
     model_config = ConfigDict(
         extra="allow",
+        defer_build=True,
     )
 
     @field_validator("id", mode="before")

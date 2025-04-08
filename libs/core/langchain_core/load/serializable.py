@@ -190,6 +190,7 @@ class Serializable(BaseModel, ABC):
 
     model_config = ConfigDict(
         extra="ignore",
+        defer_build=True,
     )
 
     @override
