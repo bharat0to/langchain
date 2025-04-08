@@ -15,74 +15,58 @@
 
 """  # noqa: E501
 
-from langchain_core.messages.ai import (
-    AIMessage,
-    AIMessageChunk,
-)
-from langchain_core.messages.base import (
-    BaseMessage,
-    BaseMessageChunk,
-    merge_content,
-    message_to_dict,
-    messages_to_dict,
-)
-from langchain_core.messages.chat import ChatMessage, ChatMessageChunk
-from langchain_core.messages.function import FunctionMessage, FunctionMessageChunk
-from langchain_core.messages.human import HumanMessage, HumanMessageChunk
-from langchain_core.messages.modifier import RemoveMessage
-from langchain_core.messages.system import SystemMessage, SystemMessageChunk
-from langchain_core.messages.tool import (
-    InvalidToolCall,
-    ToolCall,
-    ToolCallChunk,
-    ToolMessage,
-    ToolMessageChunk,
-)
-from langchain_core.messages.utils import (
-    AnyMessage,
-    MessageLikeRepresentation,
-    _message_from_dict,
-    convert_to_messages,
-    convert_to_openai_messages,
-    filter_messages,
-    get_buffer_string,
-    merge_message_runs,
-    message_chunk_to_message,
-    messages_from_dict,
-    trim_messages,
-)
+from importlib import import_module
+from typing import TYPE_CHECKING
 
-__all__ = [
-    "AIMessage",
-    "AIMessageChunk",
-    "AnyMessage",
-    "BaseMessage",
-    "BaseMessageChunk",
-    "ChatMessage",
-    "ChatMessageChunk",
-    "FunctionMessage",
-    "FunctionMessageChunk",
-    "HumanMessage",
-    "HumanMessageChunk",
-    "InvalidToolCall",
-    "MessageLikeRepresentation",
-    "SystemMessage",
-    "SystemMessageChunk",
-    "ToolCall",
-    "ToolCallChunk",
-    "ToolMessage",
-    "ToolMessageChunk",
-    "RemoveMessage",
-    "_message_from_dict",
-    "convert_to_messages",
-    "get_buffer_string",
-    "merge_content",
-    "message_chunk_to_message",
-    "message_to_dict",
-    "messages_from_dict",
-    "messages_to_dict",
-    "filter_messages",
-    "merge_message_runs",
-    "trim_messages",
-    "convert_to_openai_messages",
-]
+_message_types = {
+    "AIMessage": "ai",
+    "AIMessageChunk": "ai",
+    "BaseMessage": "base",
+    "BaseMessageChunk": "base",
+    "ChatMessage": "chat",
+    "ChatMessageChunk": "chat",
+    "FunctionMessage": "function",
+    "FunctionMessageChunk": "function",
+    "HumanMessage": "human",
+    "HumanMessageChunk": "human",
+    "RemoveMessage": "modifier",
+    "SystemMessage": "system",
+    "SystemMessageChunk": "system",
+    "ToolCall": "tool",
+    "ToolCallChunk": "tool",
+    "ToolMessage": "tool",
+    "ToolMessageChunk": "tool",
+    "InvalidToolCall": "tool",
+    "AnyMessage": "utils",
+    "MessageLikeRepresentation": "utils",
+    "_message_from_dict": "utils",
+    "convert_to_messages": "utils",
+    "convert_to_openai_messages": "utils",
+    "filter_messages": "utils",
+    "get_buffer_string": "utils",
+    "merge_message_runs": "utils",
+    "message_chunk_to_message": "utils",
+    "messages_from_dict": "utils",
+    "messages_to_dict": "utils",
+    "merge_content": "base",
+    "message_to_dict": "base",
+    "trim_messages": "utils",
+}
+
+__all__ = list(_message_types.keys())
+
+
+def __getattr__(attr_name: str) -> object:
+    if attr_name not in _message_types:
+        raise AttributeError(f"module 'langchain_core.messages' has no attribute '{attr_name}'")
+    
+    module_name = _message_types[attr_name]
+    module = import_module(f".{module_name}", package="langchain_core.messages")
+    
+    attr = getattr(module, attr_name)
+    globals()[attr_name] = attr
+    return attr
+
+
+def __dir__() -> list[str]:
+    return list(__all__)
